@@ -6,6 +6,10 @@ class Menu < ApplicationRecord
   validates :starts_at, :ends_at, inclusion: { in: 0..23, message: "must be a valid hour (0-23)" }, if: -> { starts_at.present? && ends_at.present? }
   validate :valid_start_time
 
+  def as_json(options = {})
+    super(options.merge(include: :menu_items))
+  end
+
   private
 
   def valid_start_time
