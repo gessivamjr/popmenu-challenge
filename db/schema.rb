@@ -10,7 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_26_222144) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_26_222648) do
+  create_table "menu_items", force: :cascade do |t|
+    t.string "name", null: false
+    t.decimal "price", precision: 6, scale: 2, null: false
+    t.string "currency", default: "USD", null: false
+    t.text "description"
+    t.string "category"
+    t.boolean "available", default: true
+    t.string "image_url"
+    t.integer "prep_time_minutes"
+    t.integer "menu_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["menu_id"], name: "index_menu_items_on_menu_id"
+  end
+
   create_table "menus", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -21,4 +36,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_26_222144) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
+
+  add_foreign_key "menu_items", "menus"
 end
