@@ -9,8 +9,6 @@ FactoryBot.define do
     prep_time_minutes { 15 }
     image_url { "https://example.com/image.jpg" }
 
-    association :menu
-
     trait :unavailable do
       available { false }
     end
