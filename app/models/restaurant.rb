@@ -3,4 +3,8 @@ class Restaurant < ApplicationRecord
   has_many :menu_items, through: :menus
 
   validates :name, presence: true
+
+  def as_json(options = {})
+    super(options.merge(include: :menus, methods: :menu_items))
+  end
 end
