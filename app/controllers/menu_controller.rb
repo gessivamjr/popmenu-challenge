@@ -2,10 +2,10 @@ class MenuController < ApplicationController
   before_action :set_menu, only: %i[show update destroy]
 
   def index
-    page = params[:page].to_i || 1
-    limit = params[:limit].to_i || 10
+    page = params[:page]&.to_i || 1
+    per_page = params[:per_page]&.to_i || 10
 
-    menus = Menu.all.limit(limit).offset((page - 1) * limit).order(created_at: :desc)
+    menus = Menu.all.limit(per_page).offset((page - 1) * per_page).order(created_at: :desc)
 
     render json: menus, status: :ok
   end
