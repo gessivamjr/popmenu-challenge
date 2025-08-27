@@ -6,6 +6,7 @@ FactoryBot.define do
     active { true }
     starts_at { 8 }
     ends_at { 12 }
+    association :restaurant
 
     trait :inactive do
       active { false }
