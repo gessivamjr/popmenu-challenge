@@ -5,10 +5,24 @@
 if !Rails.env.production?
   MenuItem.destroy_all
   Menu.destroy_all
+  Restaurant.destroy_all
 end
 
-# Create sample dinner menu
-dinner_menu = Menu.find_or_create_by!(name: "Dinner Menu") do |m|
+restaurant = Restaurant.find_or_create_by!(name: "Tony's Italian Bistro") do |r|
+  r.description = "Authentic Italian cuisine in the heart of downtown. Family-owned restaurant serving traditional recipes passed down through generations."
+  r.address_line_1 = "123 Main Street"
+  r.address_line_2 = "Suite 100"
+  r.city = "San Francisco"
+  r.state = "CA"
+  r.zip_code = "94102"
+  r.phone_number = "(415) 555-0123"
+  r.email = "info@example.com"
+  r.website_url = "https://www.example.com/tonys-italian-bistro"
+  r.logo_url = "https://placehold.co/150"
+  r.cover_image_url = "https://placehold.co/600x400"
+end
+
+dinner_menu = Menu.find_or_create_by!(name: "Dinner Menu", restaurant: restaurant) do |m|
   m.description = "Our signature dinner offerings featuring fresh pasta, wood-fired pizzas, and traditional Italian entrees."
   m.category = "Dinner"
   m.active = true
@@ -16,7 +30,7 @@ dinner_menu = Menu.find_or_create_by!(name: "Dinner Menu") do |m|
   m.ends_at = 22
 end
 
-lunch_menu = Menu.find_or_create_by!(name: "Lunch Menu") do |m|
+lunch_menu = Menu.find_or_create_by!(name: "Lunch Menu", restaurant: restaurant) do |m|
   m.description = "Light and delicious lunch options perfect for a midday break."
   m.category = "Lunch"
   m.active = true
@@ -24,7 +38,6 @@ lunch_menu = Menu.find_or_create_by!(name: "Lunch Menu") do |m|
   m.ends_at = 15
 end
 
-# Create sample menu items for Dinner Menu
 dinner_items = [
   {
     name: "Spaghetti Carbonara",
@@ -61,17 +74,18 @@ dinner_items = [
 ]
 
 dinner_items.each do |item_attrs|
-  MenuItem.find_or_create_by!(name: item_attrs[:name], menu: dinner_menu) do |item|
-    item.description = item_attrs[:description]
-    item.category = item_attrs[:category]
-    item.price = item_attrs[:price]
-    item.available = true
-    item.prep_time_minutes = item_attrs[:prep_time_minutes]
-    item.image_url = item_attrs[:image_url]
+  item = MenuItem.find_or_create_by!(name: item_attrs[:name]) do |new_item|
+    new_item.description = item_attrs[:description]
+    new_item.category = item_attrs[:category]
+    new_item.price = item_attrs[:price]
+    new_item.available = true
+    new_item.prep_time_minutes = item_attrs[:prep_time_minutes]
+    new_item.image_url = item_attrs[:image_url]
   end
+
+  item.menus << dinner_menu unless item.menus.include?(dinner_menu)
 end
 
-# Create sample menu items for Lunch Menu
 lunch_items = [
   {
     name: "Caprese Sandwich",
@@ -108,16 +122,34 @@ lunch_items = [
 ]
 
 lunch_items.each do |item_attrs|
-  MenuItem.find_or_create_by!(name: item_attrs[:name], menu: lunch_menu) do |item|
-    item.description = item_attrs[:description]
-    item.category = item_attrs[:category]
-    item.price = item_attrs[:price]
-    item.available = true
-    item.prep_time_minutes = item_attrs[:prep_time_minutes]
-    item.image_url = item_attrs[:image_url]
+  item = MenuItem.find_or_create_by!(name: item_attrs[:name]) do |new_item|
+    new_item.description = item_attrs[:description]
+    new_item.category = item_attrs[:category]
+    new_item.price = item_attrs[:price]
+    new_item.available = true
+    new_item.prep_time_minutes = item_attrs[:prep_time_minutes]
+    new_item.image_url = item_attrs[:image_url]
+  end
+
+  item.menus << lunch_menu unless item.menus.include?(lunch_menu)
+end
+
+shared_items = [ "Tiramisu", "Caesar Salad" ]
+shared_items.each do |item_name|
+  item = MenuItem.find_by(name: item_name)
+  if item
+    if item.menus.include?(dinner_menu) && !item.menus.include?(lunch_menu)
+      item.menus << lunch_menu
+    elsif item.menus.include?(lunch_menu) && !item.menus.include?(dinner_menu)
+      item.menus << dinner_menu
+    end
   end
 end
 
 puts "Seeded database with:"
+puts "- 1 Restaurant: #{restaurant.name}"
 puts "- 2 Menus: #{dinner_menu.name}, #{lunch_menu.name}"
-puts "- #{dinner_items.length + lunch_items.length} Menu Items total"
+puts "- #{MenuItem.count} unique Menu Items total"
+puts "- #{dinner_menu.menu_items.count} items on #{dinner_menu.name}"
+puts "- #{lunch_menu.menu_items.count} items on #{lunch_menu.name}"
+puts "- Shared items (on both menus): #{shared_items.join(', ')}"

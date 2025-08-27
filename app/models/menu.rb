@@ -1,5 +1,6 @@
 class Menu < ApplicationRecord
-  has_many :menu_items, dependent: :destroy
+  belongs_to :restaurant
+  has_and_belongs_to_many :menu_items
 
   validates :name, presence: true
   validates :starts_at, :ends_at, presence: true, if: -> { starts_at.present? || ends_at.present? }
@@ -8,6 +9,8 @@ class Menu < ApplicationRecord
 
   scope :active, ->(active) { where(active: active) }
   scope :by_category, ->(category) { where(category: category) }
+  scope :with_item, ->(menu_item) { joins(:menu_items).where(menu_items: { id: menu_item.id }) }
+  scope :with_item_name, ->(item_name) { joins(:menu_items).where(menu_items: { name: item_name }) }
 
   def as_json(options = {})
     super(options.merge(include: :menu_items))

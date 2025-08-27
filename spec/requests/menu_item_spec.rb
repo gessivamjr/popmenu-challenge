@@ -1,28 +1,29 @@
 require 'rails_helper'
 
 RSpec.describe "MenuItems", type: :request do
-  let(:menu) { create(:menu) }
-  let(:menu_item) { create(:menu_item, menu: menu) }
-  let(:other_menu) { create(:menu) }
+  let(:restaurant) { create(:restaurant) }
+  let(:menu) { create(:menu, restaurant: restaurant) }
+  let(:menu_item) { create(:menu_item, :with_menu, menu: menu) }
+  let(:other_restaurant) { create(:restaurant) }
+  let(:other_menu) { create(:menu, restaurant: other_restaurant) }
 
-  describe "GET /menu/:menu_id/menu_item" do
+  describe "GET /restaurant/:restaurant_id/menu/:menu_id/menu_item" do
     context "when menu exists" do
       context "when menu has menu items" do
-        let!(:menu_items) { create_list(:menu_item, 4, menu: menu) }
+        let!(:menu_items) { create_list(:menu_item, 4, :with_menu, menu: menu) }
 
         it "returns all menu items for the menu" do
-          get "/menu/#{menu.id}/menu_item"
+          get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item"
 
           expect(response).to have_http_status(:ok)
           expect(json).to be_an(Array)
           expect(json.length).to eq(4)
-          expect(json.map { |item| item['menu_id'] }).to all(eq(menu.id))
         end
 
         it "returns menu items with all attributes" do
           menu_item = menu_items.first
 
-          get "/menu/#{menu.id}/menu_item"
+          get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item"
 
           item_response = json.find { |item| item['id'] == menu_item.id }
           expect(item_response['name']).to eq(menu_item.name)
@@ -36,7 +37,7 @@ RSpec.describe "MenuItems", type: :request do
 
       context "when menu has no menu items" do
         it "returns an empty array" do
-          get "/menu/#{menu.id}/menu_item"
+          get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item"
 
           expect(response).to have_http_status(:ok)
           expect(json).to eq([])
@@ -46,7 +47,16 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu does not exist" do
       it "returns not found error" do
-        get "/menu/99999/menu_item"
+        get "/restaurant/#{restaurant.id}/menu/99999/menu_item"
+
+        expect(response).to have_http_status(:not_found)
+        expect(json['error']).to eq("Menu not found")
+      end
+    end
+
+    context "when restaurant does not exist" do
+      it "returns not found error" do
+        get "/restaurant/99999/menu/#{menu.id}/menu_item"
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu not found")
@@ -54,10 +64,10 @@ RSpec.describe "MenuItems", type: :request do
     end
   end
 
-  describe "GET /menu/:menu_id/menu_item/:id" do
+  describe "GET /restaurant/:restaurant_id/menu/:menu_id/menu_item/:id" do
     context "when menu item exists" do
       it "returns the menu item" do
-        get "/menu/#{menu.id}/menu_item/#{menu_item.id}"
+        get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}"
 
         expect(response).to have_http_status(:ok)
         expect(json['id']).to eq(menu_item.id)
@@ -67,15 +77,15 @@ RSpec.describe "MenuItems", type: :request do
         expect(json['category']).to eq(menu_item.category)
         expect(json['available']).to eq(menu_item.available)
         expect(json['currency']).to eq(menu_item.currency)
-        expect(json['menu_id']).to eq(menu.id)
       end
 
       it "returns menu item with all optional fields" do
-        detailed_item = create(:menu_item, :main_course, menu: menu,
+        detailed_item = create(:menu_item, :main_course, :with_menu,
+                              menu: menu,
                               image_url: "https://example.com/food.jpg",
                               prep_time_minutes: 25)
 
-        get "/menu/#{menu.id}/menu_item/#{detailed_item.id}"
+        get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{detailed_item.id}"
 
         expect(json['image_url']).to eq("https://example.com/food.jpg")
         expect(json['prep_time_minutes']).to eq(25)
@@ -83,25 +93,25 @@ RSpec.describe "MenuItems", type: :request do
       end
 
       it "returns unavailable menu item" do
-        unavailable_item = create(:menu_item, :unavailable, menu: menu)
+        unavailable_item = create(:menu_item, :unavailable, :with_menu, menu: menu)
 
-        get "/menu/#{menu.id}/menu_item/#{unavailable_item.id}"
+        get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{unavailable_item.id}"
 
         expect(json['available']).to eq(false)
       end
 
       it "returns menu item with different price formats" do
-        expensive_item = create(:menu_item, :expensive, menu: menu)
+        expensive_item = create(:menu_item, :expensive, :with_menu, menu: menu)
 
-        get "/menu/#{menu.id}/menu_item/#{expensive_item.id}"
+        get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{expensive_item.id}"
 
-        expect(json['price']).to eq("49.99")
+        expect(json['price']).to eq("100.99")
       end
     end
 
     context "when menu item does not exist" do
       it "returns not found error" do
-        get "/menu/#{menu.id}/menu_item/99999"
+        get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/99999"
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -110,18 +120,27 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu does not exist" do
       it "returns not found error" do
-        get "/menu/99999/menu_item/#{menu_item.id}"
+        get "/restaurant/#{restaurant.id}/menu/99999/menu_item/#{menu_item.id}"
 
         expect(response).to have_http_status(:not_found)
-        expect(json['error']).to eq("Menu not found")
+        expect(json['error']).to eq("Menu item not found")
+      end
+    end
+
+    context "when restaurant does not exist" do
+      it "returns not found error" do
+        get "/restaurant/99999/menu/#{menu.id}/menu_item/#{menu_item.id}"
+
+        expect(response).to have_http_status(:not_found)
+        expect(json['error']).to eq("Menu item not found")
       end
     end
 
     context "when menu item belongs to different menu" do
-      let(:other_menu_item) { create(:menu_item, menu: other_menu) }
+      let(:other_menu_item) { create(:menu_item, :with_menu, menu: other_menu) }
 
       it "returns not found error" do
-        get "/menu/#{menu.id}/menu_item/#{other_menu_item.id}"
+        get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{other_menu_item.id}"
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -129,7 +148,7 @@ RSpec.describe "MenuItems", type: :request do
     end
   end
 
-  describe "POST /menu/:menu_id/menu_item" do
+  describe "POST /restaurant/:restaurant_id/menu/:menu_id/menu_item" do
     let(:valid_attributes) do
       {
         name: "Grilled Salmon",
@@ -146,16 +165,15 @@ RSpec.describe "MenuItems", type: :request do
     context "with valid parameters" do
       it "creates a new menu item" do
         expect {
-          post "/menu/#{menu.id}/menu_item", params: valid_attributes
+          post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: valid_attributes
         }.to change(MenuItem, :count).by(1)
 
         expect(response).to have_http_status(:created)
         expect(json['name']).to eq("Grilled Salmon")
-        expect(json['menu_id']).to eq(menu.id)
       end
 
       it "returns the created menu item" do
-        post "/menu/#{menu.id}/menu_item", params: valid_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: valid_attributes
 
         expect(json['name']).to eq(valid_attributes[:name])
         expect(json['description']).to eq(valid_attributes[:description])
@@ -173,7 +191,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: minimal_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: minimal_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['name']).to eq("Simple Dish")
@@ -183,7 +201,7 @@ RSpec.describe "MenuItems", type: :request do
       end
 
       it "handles all optional fields" do
-        post "/menu/#{menu.id}/menu_item", params: valid_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: valid_attributes
 
         expect(json['image_url']).to eq(valid_attributes[:image_url])
         expect(json['prep_time_minutes']).to eq(valid_attributes[:prep_time_minutes])
@@ -194,7 +212,7 @@ RSpec.describe "MenuItems", type: :request do
       it "returns validation errors when name is missing" do
         invalid_attributes = valid_attributes.except(:name)
 
-        post "/menu/#{menu.id}/menu_item", params: invalid_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: invalid_attributes
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json['errors']).to include("Name can't be blank")
@@ -203,7 +221,7 @@ RSpec.describe "MenuItems", type: :request do
       it "returns validation errors when price is missing" do
         invalid_attributes = valid_attributes.except(:price)
 
-        post "/menu/#{menu.id}/menu_item", params: invalid_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: invalid_attributes
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json['errors']).to include("Price can't be blank")
@@ -212,7 +230,7 @@ RSpec.describe "MenuItems", type: :request do
       it "uses default currency when not provided" do
         attributes_without_currency = valid_attributes.except(:currency)
 
-        post "/menu/#{menu.id}/menu_item", params: attributes_without_currency
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: attributes_without_currency
 
         expect(response).to have_http_status(:created)
         expect(json['currency']).to eq("USD")
@@ -221,7 +239,7 @@ RSpec.describe "MenuItems", type: :request do
       it "returns validation errors for negative price" do
         invalid_attributes = valid_attributes.merge(price: -5.00)
 
-        post "/menu/#{menu.id}/menu_item", params: invalid_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: invalid_attributes
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json['errors']).to include("Price must be greater than or equal to 0")
@@ -230,7 +248,7 @@ RSpec.describe "MenuItems", type: :request do
       it "returns multiple validation errors" do
         invalid_attributes = { description: "Just a description" }
 
-        post "/menu/#{menu.id}/menu_item", params: invalid_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: invalid_attributes
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json['errors']).to include("Name can't be blank")
@@ -240,7 +258,16 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu does not exist" do
       it "returns not found error" do
-        post "/menu/99999/menu_item", params: valid_attributes
+        post "/restaurant/#{restaurant.id}/menu/99999/menu_item", params: valid_attributes
+
+        expect(response).to have_http_status(:not_found)
+        expect(json['error']).to eq("Menu not found")
+      end
+    end
+
+    context "when restaurant does not exist" do
+      it "returns not found error" do
+        post "/restaurant/99999/menu/#{menu.id}/menu_item", params: valid_attributes
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu not found")
@@ -248,7 +275,7 @@ RSpec.describe "MenuItems", type: :request do
     end
   end
 
-  describe "PATCH /menu/:menu_id/menu_item/:id" do
+  describe "PATCH /restaurant/:restaurant_id/menu/:menu_id/menu_item/:id" do
     let(:update_attributes) do
       {
         name: "Updated Dish Name",
@@ -260,7 +287,7 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu item exists" do
       it "updates the menu item" do
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: update_attributes
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: update_attributes
 
         expect(response).to have_http_status(:ok)
         expect(json['name']).to eq("Updated Dish Name")
@@ -273,7 +300,7 @@ RSpec.describe "MenuItems", type: :request do
         original_category = menu_item.category
         partial_update = { name: "New Name Only" }
 
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: partial_update
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: partial_update
 
         expect(response).to have_http_status(:ok)
         expect(json['name']).to eq("New Name Only")
@@ -283,7 +310,7 @@ RSpec.describe "MenuItems", type: :request do
       it "updates availability status" do
         availability_update = { available: false }
 
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: availability_update
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: availability_update
 
         expect(response).to have_http_status(:ok)
         expect(json['available']).to eq(false)
@@ -292,7 +319,7 @@ RSpec.describe "MenuItems", type: :request do
       it "updates price and prep time" do
         price_update = { price: 35.50, prep_time_minutes: 30 }
 
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: price_update
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: price_update
 
         expect(response).to have_http_status(:ok)
         expect(json['price']).to eq("35.5")
@@ -302,7 +329,7 @@ RSpec.describe "MenuItems", type: :request do
       it "updates currency" do
         currency_update = { currency: "EUR" }
 
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: currency_update
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: currency_update
 
         expect(response).to have_http_status(:ok)
         expect(json['currency']).to eq("EUR")
@@ -311,7 +338,7 @@ RSpec.describe "MenuItems", type: :request do
       it "updates image_url" do
         image_update = { image_url: "https://example.com/new-image.jpg" }
 
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: image_update
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: image_update
 
         expect(response).to have_http_status(:ok)
         expect(json['image_url']).to eq("https://example.com/new-image.jpg")
@@ -320,7 +347,7 @@ RSpec.describe "MenuItems", type: :request do
       it "validates updated attributes" do
         invalid_update = { name: "", price: -10.00 }
 
-        patch "/menu/#{menu.id}/menu_item/#{menu_item.id}", params: invalid_update
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item.id}", params: invalid_update
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json['errors']).to include("Name can't be blank")
@@ -330,7 +357,7 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu item does not exist" do
       it "returns not found error" do
-        patch "/menu/#{menu.id}/menu_item/99999", params: update_attributes
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/99999", params: update_attributes
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -339,7 +366,16 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu does not exist" do
       it "returns not found error" do
-        patch "/menu/99999/menu_item/#{menu_item.id}", params: update_attributes
+        patch "/restaurant/#{restaurant.id}/menu/99999/menu_item/#{menu_item.id}", params: update_attributes
+
+        expect(response).to have_http_status(:not_found)
+        expect(json['error']).to eq("Menu item not found")
+      end
+    end
+
+    context "when restaurant does not exist" do
+      it "returns not found error" do
+        patch "/restaurant/99999/menu/#{menu.id}/menu_item/#{menu_item.id}", params: update_attributes
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -347,10 +383,10 @@ RSpec.describe "MenuItems", type: :request do
     end
 
     context "when menu item belongs to different menu" do
-      let(:other_menu_item) { create(:menu_item, menu: other_menu) }
+      let(:other_menu_item) { create(:menu_item, :with_menu, menu: other_menu) }
 
       it "returns not found error" do
-        patch "/menu/#{menu.id}/menu_item/#{other_menu_item.id}", params: update_attributes
+        patch "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{other_menu_item.id}", params: update_attributes
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -358,13 +394,13 @@ RSpec.describe "MenuItems", type: :request do
     end
   end
 
-  describe "DELETE /menu/:menu_id/menu_item/:id" do
+  describe "DELETE /restaurant/:restaurant_id/menu/:menu_id/menu_item/:id" do
     context "when menu item exists" do
-      let!(:menu_item_to_delete) { create(:menu_item, menu: menu) }
+      let!(:menu_item_to_delete) { create(:menu_item, :with_menu, menu: menu) }
 
       it "deletes the menu item" do
         expect {
-          delete "/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
+          delete "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
         }.to change(MenuItem, :count).by(-1)
 
         expect(response).to have_http_status(:ok)
@@ -372,18 +408,18 @@ RSpec.describe "MenuItems", type: :request do
       end
 
       it "does not affect other menu items" do
-        other_menu_item = create(:menu_item, menu: menu)
+        other_menu_item = create(:menu_item, :with_menu, menu: menu)
 
-        delete "/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
+        delete "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
 
         expect(response).to have_http_status(:ok)
         expect(MenuItem.find_by(id: other_menu_item.id)).to be_present
       end
 
       it "does not affect menu items from other menus" do
-        other_menu_item = create(:menu_item, menu: other_menu)
+        other_menu_item = create(:menu_item, :with_menu, menu: other_menu)
 
-        delete "/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
+        delete "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
 
         expect(response).to have_http_status(:ok)
         expect(MenuItem.find_by(id: other_menu_item.id)).to be_present
@@ -392,7 +428,7 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu item does not exist" do
       it "returns not found error" do
-        delete "/menu/#{menu.id}/menu_item/99999"
+        delete "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/99999"
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -401,7 +437,16 @@ RSpec.describe "MenuItems", type: :request do
 
     context "when menu does not exist" do
       it "returns not found error" do
-        delete "/menu/99999/menu_item/#{menu_item.id}"
+        delete "/restaurant/#{restaurant.id}/menu/99999/menu_item/#{menu_item.id}"
+
+        expect(response).to have_http_status(:not_found)
+        expect(json['error']).to eq("Menu item not found")
+      end
+    end
+
+    context "when restaurant does not exist" do
+      it "returns not found error" do
+        delete "/restaurant/99999/menu/#{menu.id}/menu_item/#{menu_item.id}"
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -409,10 +454,10 @@ RSpec.describe "MenuItems", type: :request do
     end
 
     context "when menu item belongs to different menu" do
-      let(:other_menu_item) { create(:menu_item, menu: other_menu) }
+      let(:other_menu_item) { create(:menu_item, :with_menu, menu: other_menu) }
 
       it "returns not found error" do
-        delete "/menu/#{menu.id}/menu_item/#{other_menu_item.id}"
+        delete "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{other_menu_item.id}"
 
         expect(response).to have_http_status(:not_found)
         expect(json['error']).to eq("Menu item not found")
@@ -431,7 +476,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: special_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: special_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['name']).to eq("Café au Lait & Crème Brûlée™")
@@ -448,7 +493,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: high_price_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: high_price_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['price']).to eq("999.99")
@@ -462,7 +507,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: low_price_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: low_price_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['price']).to eq("0.01")
@@ -476,7 +521,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: zero_price_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: zero_price_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['price']).to eq("0.0")
@@ -494,7 +539,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: long_text_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: long_text_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['description']).to eq(long_description)
@@ -509,7 +554,7 @@ RSpec.describe "MenuItems", type: :request do
           currency: "USD"
         }
 
-        post "/menu/#{menu.id}/menu_item", params: long_name_attributes
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: long_name_attributes
 
         expect(response).to have_http_status(:created)
         expect(json['name']).to eq(long_name)
@@ -528,7 +573,7 @@ RSpec.describe "MenuItems", type: :request do
             currency: "USD"
           }
 
-          post "/menu/#{menu.id}/menu_item", params: attributes
+          post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: attributes
 
           expect(response).to have_http_status(:created)
           expect(json['category']).to eq(category)
@@ -548,7 +593,7 @@ RSpec.describe "MenuItems", type: :request do
             currency: currency
           }
 
-          post "/menu/#{menu.id}/menu_item", params: attributes
+          post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: attributes
 
           expect(response).to have_http_status(:created)
           expect(json['currency']).to eq(currency)
@@ -558,7 +603,7 @@ RSpec.describe "MenuItems", type: :request do
 
     context "with boolean values" do
       it "handles false availability correctly" do
-        post "/menu/#{menu.id}/menu_item", params: {
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: {
           name: "Unavailable Item",
           category: "main",
           price: 20.00,
@@ -571,7 +616,7 @@ RSpec.describe "MenuItems", type: :request do
       end
 
       it "handles nil/missing availability (defaults to true)" do
-        post "/menu/#{menu.id}/menu_item", params: {
+        post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: {
           name: "Default Available Item",
           category: "main",
           price: 20.00,
@@ -588,7 +633,7 @@ RSpec.describe "MenuItems", type: :request do
     it "maintains menu association correctly" do
       created_item_id = nil
 
-      post "/menu/#{menu.id}/menu_item", params: {
+      post "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item", params: {
         name: "Test Item",
         category: "main",
         price: 15.99,
@@ -597,19 +642,19 @@ RSpec.describe "MenuItems", type: :request do
 
       created_item_id = json['id']
 
-      get "/menu/#{menu.id}/menu_item"
+      get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item"
 
       expect(json.any? { |item| item['id'] == created_item_id }).to be true
     end
 
     it "maintains proper isolation between menus" do
-      menu1_item = create(:menu_item, menu: menu, name: "Menu 1 Item")
-      menu2_item = create(:menu_item, menu: other_menu, name: "Menu 2 Item")
+      menu1_item = create(:menu_item, :with_menu, menu: menu, name: "Menu 1 Item")
+      menu2_item = create(:menu_item, :with_menu, menu: other_menu, name: "Menu 2 Item")
 
-      get "/menu/#{menu.id}/menu_item"
+      get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item"
       menu1_items = json
 
-      get "/menu/#{other_menu.id}/menu_item"
+      get "/restaurant/#{other_restaurant.id}/menu/#{other_menu.id}/menu_item"
       menu2_items = json
 
       expect(menu1_items.any? { |item| item['id'] == menu1_item.id }).to be true
@@ -620,13 +665,13 @@ RSpec.describe "MenuItems", type: :request do
     end
 
     it "handles concurrent operations safely" do
-      menu_item_to_delete = create(:menu_item, menu: menu)
-      other_items = create_list(:menu_item, 3, menu: menu)
+      menu_item_to_delete = create(:menu_item, :with_menu, menu: menu)
+      other_items = create_list(:menu_item, 3, :with_menu, menu: menu)
 
-      delete "/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
+      delete "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item/#{menu_item_to_delete.id}"
       expect(response).to have_http_status(:ok)
 
-      get "/menu/#{menu.id}/menu_item"
+      get "/restaurant/#{restaurant.id}/menu/#{menu.id}/menu_item"
       remaining_ids = json.map { |item| item['id'] }
 
       expect(remaining_ids).not_to include(menu_item_to_delete.id)

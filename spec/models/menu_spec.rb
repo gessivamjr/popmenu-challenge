@@ -1,13 +1,15 @@
 require 'rails_helper'
 
 RSpec.describe Menu, type: :model do
-  it { should have_many(:menu_items).dependent(:destroy) }
+  let(:restaurant) { create(:restaurant) }
+
+  it { should have_and_belong_to_many(:menu_items) }
   it { should validate_presence_of(:name) }
 
   describe 'validations for starts_at and ends_at fields' do
     context 'when both are nil' do
       it 'skips validation' do
-        menu = Menu.new(name: 'Test Menu', starts_at: nil, ends_at: nil)
+        menu = Menu.new(name: 'Test Menu', starts_at: nil, ends_at: nil, restaurant: restaurant)
         expect(menu).to be_valid
       end
     end
@@ -30,7 +32,7 @@ RSpec.describe Menu, type: :model do
 
     context 'when both are provided, starts_at is before ends_at and is in the range of 0-23' do
       it 'is valid' do
-        menu = Menu.new(name: 'Test Menu', starts_at: 9, ends_at: 17)
+        menu = Menu.new(name: 'Test Menu', starts_at: 9, ends_at: 17, restaurant: restaurant)
         expect(menu).to be_valid
       end
     end
@@ -39,17 +41,17 @@ RSpec.describe Menu, type: :model do
   describe 'hour range validation (0-23)' do
     context 'when both times are present and valid (0-23)' do
       it 'is valid with minimum values' do
-        menu = Menu.new(name: 'Test Menu', starts_at: 0, ends_at: 1)
+        menu = Menu.new(name: 'Test Menu', starts_at: 0, ends_at: 1, restaurant: restaurant)
         expect(menu).to be_valid
       end
 
       it 'is valid with maximum values' do
-        menu = Menu.new(name: 'Test Menu', starts_at: 22, ends_at: 23)
+        menu = Menu.new(name: 'Test Menu', starts_at: 22, ends_at: 23, restaurant: restaurant)
         expect(menu).to be_valid
       end
 
       it 'is valid with mid-range values' do
-        menu = Menu.new(name: 'Test Menu', starts_at: 9, ends_at: 17)
+        menu = Menu.new(name: 'Test Menu', starts_at: 9, ends_at: 17, restaurant: restaurant)
         expect(menu).to be_valid
       end
     end
@@ -95,7 +97,7 @@ RSpec.describe Menu, type: :model do
   describe '#valid_start_time custom validation' do
     context 'when both times are present' do
       it 'is valid when starts_at is before ends_at' do
-        menu = Menu.new(name: 'Test Menu', starts_at: 9, ends_at: 17)
+        menu = Menu.new(name: 'Test Menu', starts_at: 9, ends_at: 17, restaurant: restaurant)
         expect(menu).to be_valid
       end
 

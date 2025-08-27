@@ -6,6 +6,7 @@ FactoryBot.define do
     active { true }
     starts_at { 8 }
     ends_at { 12 }
+    association :restaurant
 
     trait :inactive do
       active { false }
@@ -26,6 +27,13 @@ FactoryBot.define do
     trait :without_times do
       starts_at { nil }
       ends_at { nil }
+    end
+
+    trait :with_menu_items do
+      after(:create) do |menu|
+        menu_items = create_list(:menu_item, 2)
+        menu.menu_items << menu_items
+      end
     end
   end
 end
