@@ -1,5 +1,5 @@
 class MenuItemController < ApplicationController
-  before_action :set_menu, only: %i[index show create]
+  before_action :set_menu, only: %i[index create]
   before_action :set_menu_item, only: %i[show update destroy]
 
   def index
@@ -13,7 +13,7 @@ class MenuItemController < ApplicationController
 
   def create
     menu_item = MenuItem.new(menu_item_params)
-    menu_item.menu = @menu
+    menu_item.menus << @menu
 
     unless menu_item.valid?
       return render json: { errors: menu_item.errors.full_messages }, status: :unprocessable_content
@@ -45,7 +45,7 @@ class MenuItemController < ApplicationController
   end
 
   def set_menu
-    @menu = Menu.includes(:menu_items).find_by(id: params[:menu_id])
+    @menu = Menu.includes(:menu_items).find_by(id: params[:menu_id], restaurant_id: params[:restaurant_id])
 
     if @menu.nil?
       return render json: { error: "Menu not found" }, status: :not_found
@@ -53,16 +53,10 @@ class MenuItemController < ApplicationController
   end
 
   def set_menu_item
-    @menu_item = MenuItem.includes(:menu).find_by(id: params[:id], menu_id: params[:menu_id])
+    @menu_item = MenuItem.for_restaurant(params[:restaurant_id]).on_menu(params[:menu_id]).find_by(id: params[:id])
 
     if @menu_item.nil?
       return render json: { error: "Menu item not found" }, status: :not_found
-    end
-
-    @menu = @menu_item.menu
-
-    if @menu.nil?
-      return render json: { error: "Menu not found" }, status: :not_found
     end
   end
 end

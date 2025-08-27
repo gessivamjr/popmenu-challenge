@@ -65,7 +65,5 @@ class MenuController < ApplicationController
     if @menu.nil?
       return render json: { error: "Menu not found" }, status: :not_found
     end
-
-    @restaurant = @menu.restaurant
   end
 end

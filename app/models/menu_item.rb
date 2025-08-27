@@ -9,7 +9,11 @@ class MenuItem < ApplicationRecord
   scope :by_category, ->(category) { where(category: category) }
   scope :cheap, -> { where("price < ?", 10) }
   scope :expensive, -> { where("price > ?", 100) }
-  scope :on_menu, ->(menu) { joins(:menus).where(menus: { id: menu.id }) }
+  scope :on_menu, ->(menu_id) { joins(:menus).where(menus: { id: menu_id }) }
   scope :on_multiple_menus, -> { joins(:menus).group("menu_items.id").having("COUNT(menus.id) > 1") }
-  scope :for_restaurant, ->(restaurant) { joins(menus: :restaurant).where(restaurants: { id: restaurant.id }) }
+  scope :for_restaurant, ->(restaurant_id) { joins(menus: :restaurant).where(restaurants: { id: restaurant_id }) }
+
+  def as_json(options = {})
+    super(options.merge(except: [ :created_at, :updated_at ]))
+  end
 end
