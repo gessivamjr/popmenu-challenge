@@ -13,4 +13,6 @@ Rails.application.routes.draw do
       resources :menu_item, only: %i[index show create update destroy]
     end
   end
+
+  post "restaurant/import", to: "restaurant_import#import"
 end
