@@ -1,12 +1,21 @@
 FactoryBot.define do
   factory :restaurant_import do
     status { "pending" }
-    total_count { 0 }
-    success_count { 0 }
-    failure_count { 0 }
+    created_restaurants_count { 0 }
+    created_menus_count { 0 }
+    created_menu_items_count { 0 }
+    linked_menu_items_count { 0 }
+    failed_restaurants_count { 0 }
+    failed_menus_count { 0 }
+    failed_menu_items_count { 0 }
+    failed_links_count { 0 }
     started_at { nil }
     finished_at { nil }
     error_message { nil }
+
+    trait :pending do
+      status { "pending" }
+    end
 
     trait :processing do
       status { "processing" }
@@ -15,18 +24,28 @@ FactoryBot.define do
 
     trait :completed do
       status { "completed" }
-      total_count { 5 }
-      success_count { 5 }
-      failure_count { 0 }
+      created_restaurants_count { 2 }
+      created_menus_count { 3 }
+      created_menu_items_count { 5 }
+      linked_menu_items_count { 5 }
+      failed_restaurants_count { 0 }
+      failed_menus_count { 0 }
+      failed_menu_items_count { 0 }
+      failed_links_count { 0 }
       started_at { 2.hours.ago }
       finished_at { 1.hour.ago }
     end
 
     trait :failed do
       status { "failed" }
-      total_count { 3 }
-      success_count { 1 }
-      failure_count { 2 }
+      created_restaurants_count { 1 }
+      created_menus_count { 1 }
+      created_menu_items_count { 2 }
+      linked_menu_items_count { 1 }
+      failed_restaurants_count { 1 }
+      failed_menus_count { 1 }
+      failed_menu_items_count { 1 }
+      failed_links_count { 1 }
       started_at { 2.hours.ago }
       finished_at { 1.hour.ago }
       error_message { "Import failed due to validation errors" }

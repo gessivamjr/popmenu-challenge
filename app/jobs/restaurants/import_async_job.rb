@@ -17,9 +17,12 @@ module Restaurants
 
       import.update!(status: "completed", finished_at: Time.current, **result)
       RestaurantImportLogger.info("[#{import.id}] Process completed")
+    rescue ActiveRecord::RecordNotFound
+      RestaurantImportLogger.error("[#{restaurant_import_id}] Import record not found")
+      raise
     rescue => e
       RestaurantImportLogger.error("[#{import.id}] exception=#{e.class} msg=#{e.message}")
-      import&.update!(status: "failed", error_message: e.message, finished_at: Time.current) rescue nil
+      import.update!(status: "failed", error_message: e.message, finished_at: Time.current)
       raise
     end
   end
