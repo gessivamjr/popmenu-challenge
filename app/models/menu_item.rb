@@ -5,4 +5,10 @@ class MenuItem < ApplicationRecord
   validates :name, presence: true, uniqueness: true
 
   scope :on_multiple_menus, -> { joins(:menus).group("menu_items.id").having("COUNT(menus.id) > 1") }
+
+  def as_json(options = {})
+    super(options.merge(
+      include: { menus: { only: [ :id, :name, :restaurant_id ] } }
+    ))
+  end
 end

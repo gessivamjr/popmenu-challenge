@@ -5,7 +5,7 @@ class RestaurantController < ApplicationController
     page = params[:page]&.to_i || 1
     per_page = params[:per_page]&.to_i || 10
 
-    restaurants = Restaurant.includes(menus: :menu_items)
+    restaurants = Restaurant.includes(menus: :menu_menu_items)
                             .limit(per_page)
                             .offset((page - 1) * per_page)
                             .order(created_at: :desc)
@@ -51,7 +51,7 @@ class RestaurantController < ApplicationController
   end
 
   def set_restaurant
-    @restaurant = Restaurant.includes(menus: :menu_items).find_by(id: params[:id])
+    @restaurant = Restaurant.includes(menus: :menu_menu_items).find_by(id: params[:id])
 
     if @restaurant.nil?
       return render json: { error: "Restaurant not found" }, status: :not_found

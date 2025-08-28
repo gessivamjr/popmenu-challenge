@@ -15,13 +15,27 @@ class Menu < ApplicationRecord
 
   def as_json(options = {})
     super(options.merge(
-      include: { menu_menu_items: { methods: :name } },
-      except: [ :created_at, :updated_at, :restaurant_id ]
+      include: { menu_menu_items: { methods: :name } }
     ))
   end
 
   def add_menu_item(menu_item:, attributes:)
-    menu_menu_items.create!(menu_item:, **attributes)
+    menu_item = MenuMenuItem.new(menu_item:, **attributes)
+    menu_item.menu = self
+
+    unless menu_item.valid?
+      return { success: false, errors: menu_item.errors.full_messages }
+    end
+
+    { success: menu_item.save!, errors: [] }
+  end
+
+  def update_menu_item(menu_item:, attributes:)
+    unless menu_item.update(attributes)
+      return { success: false, errors: menu_item.errors.full_messages }
+    end
+
+    { success: true, errors: [] }
   end
 
   private

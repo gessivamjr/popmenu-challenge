@@ -10,9 +10,15 @@ Rails.application.routes.draw do
 
   resources :restaurant, only: %i[index show create update destroy] do
     resources :menu, only: %i[index show create update destroy] do
-      resources :menu_item, only: %i[index show create update destroy]
+      member do
+        post :add_menu_item
+        patch :update_menu_item
+        delete :remove_menu_item
+      end
     end
   end
+
+  resources :menu_item, only: %i[index show create update destroy]
 
   post "restaurant/import", to: "restaurant_import#import"
 end
