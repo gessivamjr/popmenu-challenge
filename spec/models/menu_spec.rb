@@ -3,7 +3,9 @@ require 'rails_helper'
 RSpec.describe Menu, type: :model do
   let(:restaurant) { create(:restaurant) }
 
-  it { should have_and_belong_to_many(:menu_items) }
+  it { should belong_to(:restaurant) }
+  it { should have_many(:menu_menu_items) }
+  it { should have_many(:menu_items).through(:menu_menu_items) }
   it { should validate_presence_of(:name) }
 
   describe 'validations for starts_at and ends_at fields' do
