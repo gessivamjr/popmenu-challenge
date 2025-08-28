@@ -1,6 +1,6 @@
 class MenuItem < ApplicationRecord
-  has_many :menu_item_menus, dependent: :destroy
-  has_many :menus, through: :menu_item_menus
+  has_many :menu_menu_items, dependent: :destroy
+  has_many :menus, through: :menu_menu_items
 
   validates :name, presence: true, uniqueness: true
 

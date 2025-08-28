@@ -9,7 +9,7 @@ class Restaurant < ApplicationRecord
       menus: {
         only: [ :id, :name, :description, :category, :active, :starts_at, :ends_at ],
         include: {
-          menu_item_menus: {
+          menu_menu_items: {
             only: [ :id, :price, :currency, :available, :description, :category, :image_url, :prep_time_minutes ],
             methods: :name
           }

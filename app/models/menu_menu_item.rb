@@ -1,6 +1,4 @@
-class MenuItemMenu < ApplicationRecord
-  self.table_name = "menu_items_menus"
-
+class MenuMenuItem < ApplicationRecord
   belongs_to :menu_item
   belongs_to :menu
 
