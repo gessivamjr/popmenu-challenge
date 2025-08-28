@@ -27,15 +27,26 @@ RSpec.describe "Restaurants", type: :request do
         expect(restaurant_response['menus'].length).to eq(3)
       end
 
-      it "includes menu_items in the response" do
+      it "includes menus with menu_menu_items in the response" do
         restaurant_with_menu_items = create(:restaurant, :with_menu_items)
 
         get "/restaurant"
 
         restaurant_response = json.find { |r| r['id'] == restaurant_with_menu_items.id }
-        expect(restaurant_response).to have_key('menu_items')
-        expect(restaurant_response['menu_items']).to be_an(Array)
-        expect(restaurant_response['menu_items'].length).to eq(6)
+        expect(restaurant_response).to have_key('menus')
+        expect(restaurant_response['menus']).to be_an(Array)
+        expect(restaurant_response['menus'].length).to eq(3)
+
+        menu_with_items = restaurant_response['menus'].first
+        expect(menu_with_items).to have_key('menu_menu_items')
+        expect(menu_with_items['menu_menu_items']).to be_an(Array)
+        expect(menu_with_items['menu_menu_items'].length).to eq(2)
+
+        menu_item = menu_with_items['menu_menu_items'].first
+        expect(menu_item).to have_key('name')
+        expect(menu_item).to have_key('price')
+        expect(menu_item).to have_key('currency')
+        expect(menu_item).to have_key('available')
       end
 
       it "orders restaurants by created_at desc" do
@@ -149,31 +160,33 @@ RSpec.describe "Restaurants", type: :request do
         expect(menu_response).to have_key('active')
         expect(menu_response).to have_key('starts_at')
         expect(menu_response).to have_key('ends_at')
-        expect(menu_response).to have_key('created_at')
-        expect(menu_response).to have_key('updated_at')
-        expect(menu_response).to have_key('restaurant_id')
+        expect(menu_response).to have_key('menu_menu_items')
       end
 
-      it "includes menu_items in the response" do
+      it "includes menus with menu_menu_items in the response" do
         restaurant = create(:restaurant, :with_menu_items)
 
         get "/restaurant/#{restaurant.id}"
 
-        expect(json).to have_key('menu_items')
-        expect(json['menu_items']).to be_an(Array)
-        expect(json['menu_items'].length).to eq(6)
+        expect(json).to have_key('menus')
+        expect(json['menus']).to be_an(Array)
+        expect(json['menus'].length).to eq(3)
 
-        menu_item = json['menu_items'].first
-        expect(menu_item).to have_key('id')
-        expect(menu_item).to have_key('name')
-        expect(menu_item).to have_key('price')
-        expect(menu_item).to have_key('currency')
-        expect(menu_item).to have_key('category')
-        expect(menu_item).to have_key('available')
-        expect(menu_item).to have_key('prep_time_minutes')
-        expect(menu_item).to have_key('image_url')
-        expect(menu_item).to have_key('created_at')
-        expect(menu_item).to have_key('updated_at')
+        menu_with_items = json['menus'].first
+        expect(menu_with_items).to have_key('menu_menu_items')
+        expect(menu_with_items['menu_menu_items']).to be_an(Array)
+        expect(menu_with_items['menu_menu_items'].length).to eq(2)
+
+        menu_menu_item = menu_with_items['menu_menu_items'].first
+        expect(menu_menu_item).to have_key('id')
+        expect(menu_menu_item).to have_key('name')
+        expect(menu_menu_item).to have_key('price')
+        expect(menu_menu_item).to have_key('currency')
+        expect(menu_menu_item).to have_key('category')
+        expect(menu_menu_item).to have_key('available')
+        expect(menu_menu_item).to have_key('prep_time_minutes')
+        expect(menu_menu_item).to have_key('image_url')
+        expect(menu_menu_item).to have_key('description')
       end
 
       it "returns restaurant with minimal data" do
@@ -295,13 +308,6 @@ RSpec.describe "Restaurants", type: :request do
 
         expect(json).to have_key('menus')
         expect(json['menus']).to eq([])
-      end
-
-      it "initializes with empty menu_items array" do
-        post "/restaurant", params: valid_attributes
-
-        expect(json).to have_key('menu_items')
-        expect(json['menu_items']).to eq([])
       end
     end
 
@@ -460,7 +466,7 @@ RSpec.describe "Restaurants", type: :request do
         expect(response).to have_http_status(:ok)
       end
 
-      it "removes menu associations when restaurant is deleted" do
+      it "removes menu_menu_item associations when restaurant is deleted" do
         restaurant_with_menu_items = create(:restaurant, :with_menu_items)
         menu_ids = restaurant_with_menu_items.menus.pluck(:id)
 
@@ -468,9 +474,7 @@ RSpec.describe "Restaurants", type: :request do
 
         expect(response).to have_http_status(:ok)
 
-        remaining_associations = ActiveRecord::Base.connection.execute(
-          "SELECT COUNT(*) FROM menu_items_menus WHERE menu_id IN (#{menu_ids.join(',')})"
-        ).first[0] if menu_ids.any?
+        remaining_associations = MenuMenuItem.where(menu_id: menu_ids).count if menu_ids.any?
 
         expect(remaining_associations || 0).to eq(0)
       end

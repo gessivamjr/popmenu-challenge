@@ -32,7 +32,9 @@ FactoryBot.define do
     trait :with_menu_items do
       after(:create) do |menu|
         menu_items = create_list(:menu_item, 2)
-        menu.menu_items << menu_items
+        menu_items.each do |menu_item|
+          create(:menu_menu_item, menu: menu, menu_item: menu_item)
+        end
       end
     end
   end
