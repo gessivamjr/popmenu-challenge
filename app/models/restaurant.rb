@@ -5,6 +5,16 @@ class Restaurant < ApplicationRecord
   validates :name, presence: true
 
   def as_json(options = {})
-    super(options.merge(include: :menus, methods: :menu_items))
+    super(options.merge(include: {
+      menus: {
+        only: [ :id, :name, :description, :category, :active, :starts_at, :ends_at ],
+        include: {
+          menu_item_menus: {
+            only: [ :id, :price, :currency, :available, :description, :category, :image_url, :prep_time_minutes ],
+            methods: :name
+          }
+        }
+      }
+    }))
   end
 end
