@@ -6,9 +6,9 @@ It is built with Ruby on Rails 8, using it's own features such as ActiveStorage 
 
 ### How to run it
 
->[!NOTE] Execution requirements:
-> Ruby 3.3.5 installed
-> Git
+> System requirements:
+> - Ruby 3.3.5 installed
+> - Git
 
 1. Clone the repository with `git@github.com:gessivamjr/popmenu-challenge.git` in the directory of your choice
 2. Then move to the directory and run in your terminal the command `bundle install` to install all dependecies
