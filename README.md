@@ -21,6 +21,10 @@ If you already installed all the dependencies with `bundle install`, your system
 
 Run `bundle exec rspec` to run all of them.
 
+### Endpoints
+
+For detailed API documentation including all available endpoints, request/response examples, and parameter specifications, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
+
 ### Technical choices
 
 To build this application, i chose a lightweight stack thinking about what would be easier to the person who will run it. 
