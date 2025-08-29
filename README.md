@@ -4,6 +4,8 @@ This application is a Restaurants platform MVP, it allows user to store and quer
 
 It is built with Ruby on Rails 8, using it's own features such as ActiveStorage and SolidQueue, and it's backed by a SQLite database.
 
+---
+
 ### How to run it
 
 > System requirements:
@@ -15,15 +17,21 @@ It is built with Ruby on Rails 8, using it's own features such as ActiveStorage 
 3. Next you need to run `bin/rails db:setup`, this command will create the database, load the schema and already seed it with some records
 4. Finally, run `bin/rails server` in a terminal and `bin/jobs start` in another. This will start the application and SolidQueue to enable processing background jobs
 
+---
+
 ### Running tests
 
 If you already installed all the dependencies with `bundle install`, your system has RSpec available to execute the unit tests placed under the `spec/` directory.
 
 Run `bundle exec rspec` to run all of them.
 
+---
+
 ### Endpoints
 
 For detailed API documentation including all available endpoints, request/response examples, and parameter specifications, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
+
+---
 
 ### Technical choices
 
@@ -31,6 +39,8 @@ To build this application, i chose a lightweight stack thinking about what would
 - SQLite: is a practical choice for a database, it does not require a separate process to be running, you can see all the data in a single file, so no need of a database management tool and also it doesn't need any previous configuration, all of that without losing ACID support and performance.
 - ActiveStorage locally: it follows the same logic as SQLite, it doesn't need any extra software running simultaneously, any extra configuration to who will run it and it suits a MVP with low disk usage.
 - SolidQueue: it leverages the SQLite database already installed, gives visibility without extra work in the database and Rails offers a lot of personalized configuration to manage queues, number of threads, retries, logs etc
+
+---
 
 ### Next Steps
 
