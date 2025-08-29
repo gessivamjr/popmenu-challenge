@@ -3,6 +3,7 @@
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
 if !Rails.env.production?
+  MenuMenuItem.destroy_all
   MenuItem.destroy_all
   Menu.destroy_all
   Restaurant.destroy_all
@@ -74,16 +75,21 @@ dinner_items = [
 ]
 
 dinner_items.each do |item_attrs|
-  item = MenuItem.find_or_create_by!(name: item_attrs[:name]) do |new_item|
-    new_item.description = item_attrs[:description]
-    new_item.category = item_attrs[:category]
-    new_item.price = item_attrs[:price]
-    new_item.available = true
-    new_item.prep_time_minutes = item_attrs[:prep_time_minutes]
-    new_item.image_url = item_attrs[:image_url]
-  end
+  item = MenuItem.find_or_create_by!(name: item_attrs[:name])
 
-  item.menus << dinner_menu unless item.menus.include?(dinner_menu)
+  unless dinner_menu.menu_menu_items.exists?(menu_item: item)
+    MenuMenuItem.create!(
+      menu: dinner_menu,
+      menu_item: item,
+      description: item_attrs[:description],
+      category: item_attrs[:category],
+      price: item_attrs[:price],
+      currency: "USD",
+      available: true,
+      prep_time_minutes: item_attrs[:prep_time_minutes],
+      image_url: item_attrs[:image_url]
+    )
+  end
 end
 
 lunch_items = [
@@ -122,26 +128,54 @@ lunch_items = [
 ]
 
 lunch_items.each do |item_attrs|
-  item = MenuItem.find_or_create_by!(name: item_attrs[:name]) do |new_item|
-    new_item.description = item_attrs[:description]
-    new_item.category = item_attrs[:category]
-    new_item.price = item_attrs[:price]
-    new_item.available = true
-    new_item.prep_time_minutes = item_attrs[:prep_time_minutes]
-    new_item.image_url = item_attrs[:image_url]
-  end
+  item = MenuItem.find_or_create_by!(name: item_attrs[:name])
 
-  item.menus << lunch_menu unless item.menus.include?(lunch_menu)
+  unless lunch_menu.menu_menu_items.exists?(menu_item: item)
+    MenuMenuItem.create!(
+      menu: lunch_menu,
+      menu_item: item,
+      description: item_attrs[:description],
+      category: item_attrs[:category],
+      price: item_attrs[:price],
+      currency: "USD",
+      available: true,
+      prep_time_minutes: item_attrs[:prep_time_minutes],
+      image_url: item_attrs[:image_url]
+    )
+  end
 end
 
 shared_items = [ "Tiramisu", "Caesar Salad" ]
 shared_items.each do |item_name|
   item = MenuItem.find_by(name: item_name)
   if item
-    if item.menus.include?(dinner_menu) && !item.menus.include?(lunch_menu)
-      item.menus << lunch_menu
-    elsif item.menus.include?(lunch_menu) && !item.menus.include?(dinner_menu)
-      item.menus << dinner_menu
+    dinner_link = dinner_menu.menu_menu_items.find_by(menu_item: item)
+    lunch_link = lunch_menu.menu_menu_items.find_by(menu_item: item)
+
+    if dinner_link && !lunch_link
+      MenuMenuItem.create!(
+        menu: lunch_menu,
+        menu_item: item,
+        description: dinner_link.description,
+        category: dinner_link.category,
+        price: dinner_link.price,
+        currency: dinner_link.currency,
+        available: dinner_link.available,
+        prep_time_minutes: dinner_link.prep_time_minutes,
+        image_url: dinner_link.image_url
+      )
+    elsif lunch_link && !dinner_link
+      MenuMenuItem.create!(
+        menu: dinner_menu,
+        menu_item: item,
+        description: lunch_link.description,
+        category: lunch_link.category,
+        price: lunch_link.price,
+        currency: lunch_link.currency,
+        available: lunch_link.available,
+        prep_time_minutes: lunch_link.prep_time_minutes,
+        image_url: lunch_link.image_url
+      )
     end
   end
 end
@@ -150,6 +184,7 @@ puts "Seeded database with:"
 puts "- 1 Restaurant: #{restaurant.name}"
 puts "- 2 Menus: #{dinner_menu.name}, #{lunch_menu.name}"
 puts "- #{MenuItem.count} unique Menu Items total"
-puts "- #{dinner_menu.menu_items.count} items on #{dinner_menu.name}"
-puts "- #{lunch_menu.menu_items.count} items on #{lunch_menu.name}"
+puts "- #{MenuMenuItem.count} total Menu-Item links"
+puts "- #{dinner_menu.menu_menu_items.count} items on #{dinner_menu.name}"
+puts "- #{lunch_menu.menu_menu_items.count} items on #{lunch_menu.name}"
 puts "- Shared items (on both menus): #{shared_items.join(', ')}"
